@@ -1,11 +1,14 @@
 package com.me.githubreposearch.search;
 
-import com.me.githubreposearch.api.GitHubApi;
 import com.me.githubreposearch.api.GithubServiceClient;
 import com.me.githubreposearch.data.GithubRepository;
+import com.me.githubreposearch.model.SearchResponse;
 import com.me.githubreposearch.model.SearchResult;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Response;
 
 public class SearchPresenter implements SearchPresenterContract, GithubServiceClient.ApiCallback {
 
@@ -25,13 +28,23 @@ public class SearchPresenter implements SearchPresenterContract, GithubServiceCl
     }
 
     @Override
-    public void onSuccess(List<SearchResult> reposList, int totalCount) {
-        viewContract.displaySearchResults(reposList, totalCount);
-
+    public void handleGitHubResponse(Response<SearchResponse> response) {
+        if (response.isSuccessful()) {
+            SearchResponse searchResponse = response.body();
+            if (searchResponse != null && searchResponse.getSearchResults() != null) {
+                viewContract.displaySearchResults(searchResponse.getSearchResults(), searchResponse.getTotalCount());
+            } else {
+                viewContract.displayError("E102 - System error");
+            }
+        } else {
+            viewContract.displayError("E101 - System error");
+        }
     }
 
     @Override
-    public void onError(String errorMessage) {
-        viewContract.displayError(errorMessage);
+    public void handleGitHubError() {
+        viewContract.displayError();
     }
+
+
 }

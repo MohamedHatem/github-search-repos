@@ -30,31 +30,33 @@ public class GithubServiceClient {
             public void onResponse(Call<SearchResponse> call, Response<SearchResponse> response) {
                 Log.d(LOG_TAG, "onResponse: Got response:" + response);
 
-                if (response.isSuccessful()) {
-
-                    List<SearchResult> reposList = response.body() != null ? response.body().getSearchResults() : new ArrayList<SearchResult>();
-                    int totalCount = response.body() != null ? response.body().getTotalCount() : 0;
-                    apiCallback.onSuccess(reposList, totalCount);
-
-                } else {
-
-                    apiCallback.onError(response.errorBody() != null ? response.errorBody().toString() : "unkown error message");
-                }
+//                if (response.isSuccessful()) {
+//
+//                    List<SearchResult> reposList = response.body() != null ? response.body().getSearchResults() : new ArrayList<SearchResult>();
+//                    int totalCount = response.body() != null ? response.body().getTotalCount() : 0;
+//                    apiCallback.onSuccess(reposList, totalCount);
+//
+//                } else {
+//
+//                    apiCallback.onError(response.errorBody() != null ? response.errorBody().toString() : "unkown error message");
+//                }
+                apiCallback.handleGitHubResponse(response);
             }
 
             @Override
             public void onFailure(Call<SearchResponse> call, Throwable t) {
-                Log.d(LOG_TAG, "onFailure: Failed to get data");
-
-                apiCallback.onError(t.getMessage() != null ? t.getMessage() : "unkown error type");
+//                Log.d(LOG_TAG, "onFailure: Failed to get data");
+//
+//                apiCallback.onError(t.getMessage() != null ? t.getMessage() : "unkown error type");
+                apiCallback.handleGitHubError();
             }
         });
     }
 
     public interface ApiCallback {
 
-        void onSuccess(List<SearchResult> reposList, int totalCount);
+        void handleGitHubResponse(Response<SearchResponse> response);
 
-        void onError(String errorMessage);
+        void handleGitHubError();
     }
 }

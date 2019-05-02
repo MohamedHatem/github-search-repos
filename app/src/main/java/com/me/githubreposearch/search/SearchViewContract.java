@@ -13,4 +13,6 @@ public interface SearchViewContract {
                               @Nullable Integer totalCount);
 
     void displayError(String s);
+
+    void displayError();
 }
