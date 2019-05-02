@@ -2,6 +2,7 @@ package com.me.githubreposearch;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -12,26 +13,29 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.me.githubreposearch.api.GitHubApi;
-import com.me.githubreposearch.model.SearchResponse;
+import com.me.githubreposearch.data.GithubRepository;
 import com.me.githubreposearch.model.SearchResult;
+import com.me.githubreposearch.search.SearchPresenter;
+import com.me.githubreposearch.search.SearchViewContract;
 
 import java.util.List;
+import java.util.Locale;
 
-import hugo.weaving.DebugLog;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SearchViewContract {
 
     private ReposRvAdapter rvAdapter;
+    private TextView tvStatus;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        tvStatus = findViewById(R.id.tv_status);
 
         final EditText etSearchQuery = findViewById(R.id.et_search_query);
 
@@ -39,7 +43,9 @@ public class MainActivity extends AppCompatActivity {
                 .baseUrl("https://api.github.com")
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-        final GitHubApi gitHubApi = retrofit.create(GitHubApi.class);
+        GithubRepository repository = new GithubRepository(retrofit.create(GitHubApi.class));
+        final SearchPresenter searchPresenter = new SearchPresenter(this, repository);
+
 
         etSearchQuery.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -47,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
                                           int actionId,
                                           KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                    searchGitHubRepos(gitHubApi, etSearchQuery.getText().toString());
+                    searchPresenter.searchGitHubRepos(etSearchQuery.getText().toString());
                     return true;
                 }
                 return false;
@@ -60,50 +66,19 @@ public class MainActivity extends AppCompatActivity {
         rvRepos.setAdapter(rvAdapter);
     }
 
-    /**
-     * @param gitHubApi Retrofit interface to fetch data from GitHub
-     * @param query     search query e.g. "android view stars:>1000 topic:android"
-     */
-    @DebugLog
-    private void searchGitHubRepos(GitHubApi gitHubApi,
-                                   String query) {
-        Call<SearchResponse> call = gitHubApi.searchRepos(query);
-        call.enqueue(new Callback<SearchResponse>() {
-            @Override
-            public void onResponse(Call<SearchResponse> call,
-                                   Response<SearchResponse> response) {
-                handleResponse(response);
-            }
 
-            @Override
-            public void onFailure(Call<SearchResponse> call,
-                                  Throwable t) {
-                Log.e("", "", t);
-                handleError("E103 - System error");
-            }
-        });
-    }
 
-    @DebugLog
-    private void handleResponse(@NonNull Response<SearchResponse> response) {
-        if (response.isSuccessful()) {
-            SearchResponse searchResponse = response.body();
-            if (searchResponse != null) {
-                handleSearchResults(searchResponse.getSearchResults());
-            } else {
-                handleError("E102 - System error");
-            }
-        } else {
-            handleError("E101 - System error");
-        }
-    }
-
-    private void handleError(String s) {
-        Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
-    }
-
-    @DebugLog
-    private void handleSearchResults(List<SearchResult> searchResults) {
+    @Override
+    public void displaySearchResults(@NonNull List<SearchResult> searchResults, @Nullable Integer totalCount) {
         rvAdapter.updateResults(searchResults);
+        tvStatus.setText(String.format(Locale.US, "Number of results: %d", totalCount));
+
+
+    }
+
+    @Override
+    public void displayError(String s) {
+        Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
+
     }
 }

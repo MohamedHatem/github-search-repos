@@ -9,6 +9,7 @@ import java.util.List;
 
 public class SearchResponse {
     @Expose
+    @SerializedName("total_count")
     private Integer totalCount;
     @SerializedName("incomplete_results")
     @Expose
