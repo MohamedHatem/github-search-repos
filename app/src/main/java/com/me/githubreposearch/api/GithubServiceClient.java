@@ -3,10 +3,6 @@ package com.me.githubreposearch.api;
 import android.util.Log;
 
 import com.me.githubreposearch.model.SearchResponse;
-import com.me.githubreposearch.model.SearchResult;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;

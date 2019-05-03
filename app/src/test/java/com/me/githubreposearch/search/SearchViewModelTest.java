@@ -4,53 +4,52 @@ import com.me.githubreposearch.data.GithubRepository;
 import com.me.githubreposearch.model.SearchResponse;
 import com.me.githubreposearch.model.SearchResult;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import java.util.ArrayList;
+
+import java.util.Collections;
 import java.util.List;
 
 import retrofit2.Response;
 
-public class SearchPresenterTest {
+public class SearchViewModelTest {
 
-    private SearchPresenter presenter;
+    private SearchViewModel viewModel;
 
     @Mock
     private GithubRepository repository;
 
-    @Mock
-    private SearchViewContract viewContract;
-
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         MockitoAnnotations.initMocks(this);// required for the "@Mock" annotations
 
-        // Make presenter a mock while using mock repository and viewContract created above
-        presenter = Mockito.spy(new SearchPresenter(viewContract, repository));
+        // Make viewModel a mock while using mock repository and viewContract created above
+        viewModel = Mockito.spy(new SearchViewModel(repository));
     }
 
     @Test
     public void searchGitHubRepos_noQuery() {
         String searchQuery = null;
         // Trigger
-        presenter.searchGitHubRepos(searchQuery);
+        viewModel.searchGitHubRepos(searchQuery);
 
         // Validation
-        Mockito.verify(repository, Mockito.never()).searchRepos(searchQuery, presenter);
+        Mockito.verify(repository, Mockito.never()).searchRepos(searchQuery, viewModel);
     }
 
     @Test
     public void searchGitHubRepos() {
         String searchQuery = "some query";
         // Trigger
-        presenter.searchGitHubRepos(searchQuery);
+        viewModel.searchGitHubRepos(searchQuery);
         // Validation
-        Mockito.verify(repository, Mockito.times(1)).searchRepos(searchQuery, presenter);
+        Mockito.verify(repository, Mockito.times(1)).searchRepos(searchQuery, viewModel);
     }
 
     /**
@@ -63,24 +62,53 @@ public class SearchPresenterTest {
      * -final-classesmethods">here</a>
      */
     @SuppressWarnings("unchecked")
+
+    /**
+     * TODO : IT doesn't succeed how ever it shall.
+     * with the following error :-
+     * Wanted but not invoked:-
+     *
+     *  searchViewModel.renderSuccess(
+     *   Mock for SearchResponse, hashCode: 2151717
+     *    );
+     *    -> at com.me.githubreposearch.search.SearchViewModel.renderSuccess(SearchViewModel.java:52)
+     *
+     *  However, there was exactly 1 interaction with this mock:
+     *  searchViewModel.handleGitHubResponse(
+     *  Mock for Response, hashCode: 1073763441
+     *  );
+     *  -> at com.me.githubreposearch.search.SearchViewModelTest.handleGitHubResponse_Success(SearchViewModelTest.java:75)
+     */
     @Test
     public void handleGitHubResponse_Success() {
         Response response = Mockito.mock(Response.class);
         SearchResponse searchResponse = Mockito.mock(SearchResponse.class);
         Mockito.doReturn(true).when(response).isSuccessful();
         Mockito.doReturn(searchResponse).when(response).body();
-        List<SearchResult> searchResults = new ArrayList<>();
-        searchResults.add(new SearchResult());
-        searchResults.add(new SearchResult());
-        searchResults.add(new SearchResult());
+        List<SearchResult> searchResults = Collections.singletonList(new SearchResult());
         Mockito.doReturn(searchResults).when(searchResponse).getSearchResults();
-        Mockito.doReturn(101).when(searchResponse).getTotalCount();
 
         // Trigger
-        presenter.handleGitHubResponse(response);
+        viewModel.handleGitHubResponse(response);
 
         // Validation
-        Mockito.verify(viewContract, Mockito.times(1)).displaySearchResults(searchResults, 101);
+        Mockito.verify(viewModel, Mockito.times(1)).renderSuccess(searchResponse);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void renderSuccess() {
+        Response response = Mockito.mock(Response.class);
+        SearchResponse searchResponse = Mockito.mock(SearchResponse.class);
+        Mockito.doReturn(true).when(response).isSuccessful();
+        Mockito.doReturn(searchResponse).when(response).body();
+        Mockito.doReturn(1001).when(searchResponse).getTotalCount();
+
+        // Trigger
+        viewModel.handleGitHubResponse(response);
+
+        // Validation
+        Assert.assertEquals("Number of results: 1001", viewModel.status.get());
     }
 
     @SuppressWarnings("unchecked")
@@ -90,10 +118,12 @@ public class SearchPresenterTest {
         Mockito.doReturn(false).when(response).isSuccessful();
 
         // Trigger
-        presenter.handleGitHubResponse(response);
+        viewModel.handleGitHubResponse(response);
 
         // Validation
-        Mockito.verify(viewContract, Mockito.times(1)).displayError("E101 - System error");
+        Assert.assertEquals("E101 - System error", viewModel.status.get());
+
+
     }
 
     @SuppressWarnings("unchecked")
@@ -104,18 +134,18 @@ public class SearchPresenterTest {
         Mockito.doReturn(null).when(response).body();
 
         // Trigger
-        presenter.handleGitHubResponse(response);
+        viewModel.handleGitHubResponse(response);
 
         // Validation
-        Mockito.verify(viewContract, Mockito.times(1)).displayError("E102 - System error");
+        Assert.assertEquals("E102 - System error", viewModel.status.get());
     }
 
     @Test
     public void handleGitHubError() {
         // Trigger
-        presenter.handleGitHubError();
+        viewModel.handleGitHubError();
 
         // Validation
-        Mockito.verify(viewContract, Mockito.times(1)).displayError();
+        Assert.assertEquals("some error happened", viewModel.status.get());
     }
 }
